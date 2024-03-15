@@ -1,20 +1,20 @@
 
-## Requirements
+## Requirements / Setup
 
 Install required packages manually:
 
 ```{r}
-install.packages("argparser")
+install.packages("argparser", dependencies=TRUE)
+install.packages("doFuture", dependencies=TRUE)
 install.packages("doParallel")
-install.packages("doFuture")
 install.packages("foreach")
 ```
 
-Or use `renv` to detect and install depenedencies:
+Or use `renv` to install dependencies from the `DESCRIPTION` file:
 
 ```{r}
 install.packages("renv")
-renv::init()
+renv::init(settings = list(snapshot.type="explicit"))
 ```
 
 ## Running tests
