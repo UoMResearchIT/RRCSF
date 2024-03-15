@@ -2,7 +2,7 @@
 
 library(argparser, quietly = TRUE)
 
-parser <- arg_parser("Test foreach alternatives")
+parser <- arg_parser("Run a series of tasks sequentially")
 parser <- add_argument(parser, "--iter", default = 24, type = "integer",
                        help = "Number of tasks")
 parser <- add_argument(parser, "--sleep", default = 0.1, type = "numeric",
