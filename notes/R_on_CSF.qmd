@@ -1,0 +1,285 @@
+---
+title: "Preparing R code for unattended parallel execution"
+author: "Martin Herrerias Azcue"
+format: 
+  revealjs:
+    center: false
+    transition: fade
+    theme: [default, custom.scss]
+    code-line-numbers: false
+    execute:
+      eval: false
+knitr:
+  opts_chunk:
+    echo: true
+    eval: false
+---
+
+## Overview
+
+Make sure your code can run:  
+  
+**Unattended (CSF)**
+
+-  From the terminal, using `R [CMD BATCH]` or `Rscript`
+-  Save your results to file (`write_csv`, `save`)
+-  Save your plots to file (graphics devices and `ggsave`)
+  
+**Somewhere else**
+
+-  Working directory and input/output file paths (`here`)
+-  Package Management -- reproduce your environment (`renv`)
+-  Check for custom settings `.Rprofile` and `.Renviron`
+  
+**Parallel**
+
+-  Use all the cores in your laptop before you try CSF
+
+## Running R from the shell (Where is my _source_ button?)
+
+-  `Rscript [options] example.R [...] > example.log`
+-  `R [options] < example.R [--args ...] > example.log`
+-  `R CMD BATCH [options] ['--args ...'] example.R [example.Rout]`
+
+(_R_ / _Rscript_ have to be in your system's `PATH`)
+
+They're roughly equivalent, but have different defaults,
+(type `R -h` to see all options).
+
+-  `Rscript x` is equivalent to `R --quiet --no-echo -f x`
+-  `R CMD BATCH x` is equivalent to `R < x > example.Rout`
+
+Recommended options: `--no-restore`, `--no-save`
+  
+There's also `littler`. See "Why (or when) is Rscript (or littler) better than R CMD BATCH?" [Stackoverflow](https://stackoverflow.com/questions/21969145/why-or-when-is-rscript-or-littler-better-than-r-cmd-batch)
+
+## `renv`
+
+Make sure your `R.version` matches one of the _R_ versions installed on CSF (use `module search /R/` to see available options).
+
+You can install multiple R versions on your local machine and select among them using: _Tools > Global Options > General (Basic) (R sessions) > R version_
+
+Most code will run just fine with minor version differences.
+
+```{r}
+options(renv.settings.ignored.packages) = c('Rmpi')
+renv::settings$ignored.packages()
+
+# TODO: check if this is necessary
+options(renv.config.autoloader.enabled = FALSE)
+renv::config$autoloader.enabled()
+```
+
+## Parallelization
+
+> Use all the cores in your laptop before you try CSF  
+  
+Parallel computing is a world on its own:  
+<https://cran.r-project.org/web/views/HighPerformanceComputing.html>  
+  
+- Implicit parallelism
+- Explicit parallelism
+  - Distributed (memory) processing
+  - "Embarrasingly parallel" processing
+
+## Implicit parallelism
+
+-  Vector / Matrix operations should run faster on CSF "out of the box".
+
+If you do `sessionInfo()` you should see:
+
+```
+Matrix products: default
+BLAS:   /opt/apps/apps/gcc/R/4.2.2/lib64/R/lib/libRblas.so
+LAPACK: /opt/apps/apps/gcc/R/4.2.2/lib64/R/lib/libRlapack.so
+```
+
+-  `pnmath` and `romp` are experimental projects to use OpenMP directives in base R functions.  
+_"Similar functionality is expected to become integrated into R ‘eventually’."_ [CRAN/HPC](https://cran.r-project.org/web/views/HighPerformanceComputing.html)
+
+## Distributed processing
+
+Series of taks that can run asynchronously, but have non-trivial dependencies to each other.
+
+- [`Rmpi`](https://cran.r-project.org/web/packages/Rmpi/index.html) low-level MPI directives
+- [`mirai`](https://cran.r-project.org/web/packages/mirai/index.html) Minimalist Async Evaluation Framework for R
+- [`future`](https://future.futureverse.org/) "simple and uniform" asynchronous evaluation (wraps `mirai` / `callr`)
+- [`targets`](https://books.ropensci.org/targets/) Make-like pipeline tool for R
+
+## "Embarrasingly parallel" processing
+
+Series of tasks that are independent from the rest,
+e.g. `apply` or `purrr::map` calls, or plain `for` loops:  
+  
+```{r}
+slow_fcn <- function(x) {
+  Sys.sleep(runif(1)*0.1)
+  x^2
+}
+x <- 1:100
+y <- c()
+
+system.time(
+  for (i in seq_along(x)) {
+    y[i] = slow_fcn(x[i])
+  }
+)
+```
+
+## `foreach() %dopar%` with `registerDo...`
+
+```{r}
+library(parallel)
+library(foreach)
+library(doParallel) # there's also doMC, doSNOW, doMPI
+
+workers = as.integer(Sys.getenv("NSLOTS", unset = detectCores()))
+cl <- parallel::makeCluster(workers)
+doParallel::registerDoParallel(cl)
+
+system.time(
+  y <- foreach(xi = x) %dopar% {
+    slow_fcn(xi)
+  }
+)
+
+stopCluster(cl)
+```
+
+## `foreach() %dofuture%`
+
+Henrik Bengtsson, "%dofuture% - a Better foreach() Parallelization Operator than %dopar%",
+June 26, 2023 in R. <https://www.jottr.org/2023/06/26/dofuture/>
+
+```{r}
+library(foreach)
+library(doFuture)
+
+workers = availableCores() # correctly detects NSLOTS
+plan(multisession, workers = workers)
+
+system.time(
+  y <- foreach(xi = x) %dofuture% {
+    slow_fcn(xi)
+  }
+)
+```
+- Uniform syntax (independent of cluster type)
+- Better dependency tracking
+- Handling of seeded random numbers
+
+
+## Mapping alternatives {.scrollable}
+
+See: <https://future.apply.futureverse.org/#role>
+
+<table>
+<tr>
+<th>Package</th>
+<th>Functions</th>
+<th>Backends</th>
+</tr>
+
+<tr style="vertical-align: top">
+<td>
+<a href="https://cran.r-project.org/package=future.apply"><strong>future.apply</strong></a><br>
+<br>
+</td>
+<td>
+Future-versions of common goto <code>*apply()</code> functions available in base R (of the <strong>base</strong> package):<br>
+<code>future_apply()</code>, 
+<code>future_by()</code>, 
+<code>future_eapply()</code>, 
+<code>future_lapply()</code>, 
+<code>future_Map()</code>, 
+<code>future_mapply()</code>, 
+<code>future_.mapply()</code>, 
+<code>future_replicate()</code>,
+<code>future_sapply()</code>,
+<code>future_tapply()</code>, and 
+<code>future_vapply()</code>.
+<br>
+<em>The following function is not implemented:</em><br>
+<code>future_rapply()</code><br>
+</td>
+<td>
+All <strong>future</strong> backends
+</td>
+</tr>
+
+<tr style="vertical-align: top">
+<td>
+<strong>parallel</strong>
+</td>
+<td>
+<code>mclapply()</code>, <code>mcmapply()</code>,
+<code>clusterMap()</code>, <code>parApply()</code>, <code>parLapply()</code>, <code>parSapply()</code>, ...
+</td>
+<td>
+Built-in and conditional on operating system</a>
+</td>
+</tr>
+
+<tr style="vertical-align: top">
+<td>
+<a href="https://cran.r-project.org/package=foreach"><strong>foreach</strong></a>
+</td>
+<td>
+<code>foreach()</code>,
+<code>times()</code>
+</td>
+<td>
+All <strong>future</strong> backends via <a href="https://cran.r-project.org/package=doFuture"><strong>doFuture</strong></a>
+</td>
+</tr>
+
+<tr style="vertical-align: top">
+<td>
+<a href="https://cran.r-project.org/package=furrr"><strong>furrr</strong></a>
+</td>
+<td>
+<code>future_imap()</code>,
+<code>future_map()</code>,
+<code>future_pmap()</code>,
+<code>future_map2()</code>,
+...
+</td>
+<td>
+All <strong>future</strong> backends
+</td>
+</tr>
+
+<tr style="vertical-align: top">
+<td>
+<a href="https://bioconductor.org/packages/release/bioc/html/BiocParallel.html"><strong>BiocParallel</strong></a>
+</td>
+<td>
+Bioconductor's parallel mappers:<br>
+<code>bpaggregate()</code>,
+<code>bpiterate()</code>,
+<code>bplapply()</code>, and
+<code>bpvec()</code>
+</td>
+<td>
+All <strong>future</strong> backends via <a href="https://cran.r-project.org/package=doFuture"><strong>doFuture</strong></a> (because it supports <strong>foreach</strong>) or via <a href="https://github.com/HenrikBengtsson/BiocParallel.FutureParam"><strong>BiocParallel.FutureParam</strong></a> (direct BiocParallelParam support; prototype)
+</td>
+</tr>
+
+
+<tr style="vertical-align: top">
+<td>
+<a href="https://cran.r-project.org/package=plyr"><strong>plyr</strong></a>
+</td>
+<td>
+<code>**ply(..., .parallel = TRUE)</code> functions:<br>
+<code>aaply()</code>,
+<code>ddply()</code>,
+<code>dlply()</code>,
+<code>llply()</code>, ...
+</td>
+<td>
+All <strong>future</strong> backends via <a href="https://cran.r-project.org/package=doFuture"><strong>doFuture</strong></a> (because it uses <strong>foreach</strong> internally)
+</td>
+</tr>
+
+</table>

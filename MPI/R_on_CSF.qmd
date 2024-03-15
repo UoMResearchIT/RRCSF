@@ -1,0 +1,78 @@
+---
+title: "Multi-node jobs (Rmpi)"
+author: "Martin Herrerias Azcue"
+format: 
+  revealjs:
+    center: false
+    transition: fade
+    theme: [default, custom.scss]
+    code-line-numbers: false
+    execute:
+      eval: false
+knitr:
+  opts_chunk:
+    echo: true
+    eval: false
+---
+
+## Installing `Rmpi`
+
+```{r}
+mpi.include <- Sys.getenv("MPI_INCLUDE")
+mpi.lib <- Sys.getenv("MPI_LIB")
+config.args <- c(
+  paste0("--with-Rmpi-include=", mpi.include),
+  paste0("--with-Rmpi-libpath=", mpi.lib),
+  "--with-Rmpi-type=OPENMPI"
+)
+install.packages("Rmpi", configure.args = config.args)
+```
+
+## `R` script
+
+```{r}
+library(Rmpi)
+library(snow)
+
+library(doFuture)
+library(foreach)
+
+n_cores <- availableCores()
+workers <- mpi.universe.size() - 1
+
+cat("availableCores reports", n_cores, "cores\n")
+cat("mpi.universe.size reports", workers + 1, "workers\n")
+
+cl <- snow::makeMPIcluster(count = workers, type = "MPI")
+
+registerDoFuture()
+plan(cluster, workers = cl)
+ 
+# ...
+# foreach(x) %dopar% { ... }
+# ...
+
+# IMPORTANT: if you don't use these two, the job will hang and never finish
+# (the same happens if you try to use snow::stopCluster)
+mpi.close.Rslaves()
+mpi.exit()
+```
+
+## `qsub` script
+
+```{bash}
+#!/bin/bash --login
+#$ -cwd
+#$ -pe mpi-24-ib.pe 48   # must be 48 or more and a multiple of 24
+
+module load mpi/gcc/openmpi/4.1.2
+module load apps/gcc/R/4.2.2
+
+mpirun --bind-to none -n 1 R CMD BATCH --no-restore --no-save <your_script>.R
+```
+
+Vinh Nguyen, "Scheduled Parallel Computing with R: R + Rmpi + OpenMPI + Sun Grid Engine (SGE)""
+[R bloggers, January 20, 2010](https://www.r-bloggers.com/2010/01/scheduled-parallel-computing-with-r-r-rmpi-openmpi-sun-grid-engine-sge/)
+
+Luke Tierney, "Simple Network of Workstations for R"
+<http://homepage.divms.uiowa.edu/~luke/R/cluster/cluster.html#NWD4>

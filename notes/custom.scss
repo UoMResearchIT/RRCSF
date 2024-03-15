@@ -1,0 +1,13 @@
+/*-- scss:defaults --*/
+$presentation-font-size-root: 28px;
+$presentation-h2-font-size: 1.4em;
+$code-block-font-size: 1.0em;
+
+// $code-block-bg: #bbb;
+
+/*-- scss:rules --*/
+
+.reveal div.sourceCode {
+  margin-top: 1em !important;
+  margin-bottom: 1em !important;
+}

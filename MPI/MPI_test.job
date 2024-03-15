@@ -1,0 +1,12 @@
+#!/bin/bash --login
+#$ -cwd
+#$ -pe mpi-24-ib.pe 48   # must be a 48 or more and a multiple of 24
+#$ -l s_rt=00:05:00
+#$ -o MPI_test.log
+#$ -e MPI_test.log
+#$ -N MPI_test
+
+module load mpi/gcc/openmpi/4.1.2
+module load apps/gcc/R/4.2.2
+
+mpirun --bind-to none -n 1 R CMD BATCH --no-restore --no-save MPI_test.R
