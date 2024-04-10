@@ -3,11 +3,11 @@
 
 # Author: Rowan Green, https://orcid.org/0000-0002-2147-9087, 02/2024
 #
-# This script creates an ODE model simulating growth and mutation in a 
+# This script creates an ODE model simulating growth and mutation in a
 # population of E. coli bacteria.
 #
 # - Parallel processing of the foreach instruction (line ~210) on the CSF
-#   is helpful because we want to test a large number of different parameter 
+#   is helpful because we want to test a large number of different parameter
 #   sets for their effect on mutation rate plasticity.
 #
 # - In the final plot we use this large data set of many runs taking differing
@@ -15,7 +15,7 @@
 #   output of interest (mutation rate plasticity)
 #
 # - The mutation rate plasticity we are looking at is the change in mutation
-#   rates in populations provisioned with differing amounts of glucose as a 
+#   rates in populations provisioned with differing amounts of glucose as a
 #   food source.
 
 # Opening packages -------------------------------------------------------
@@ -53,18 +53,18 @@ parameters <- c(U1 = 0.2657562, #fitted to Ks Dykhuzien & Growth Jain
                 D2 = 6.9e-3 * (0.029), #rate of c pairing opposite an oG relative to C:G is 6e-8:2.1e-6 (Maki)
                 C1 = 2.8, #kcat measured ex vivo Xia et al, 2005
                 C2 = 3.5e-4, #lu et al, 1996
-                R1 = 6.9e-3 * (0.029), #rate of oG pairing with C is = D2 
+                R1 = 6.9e-3 * (0.029), #rate of oG pairing with C is = D2
                 S = 0.02582221, #fitted to give mutS KO mut rate 40x wt (Swings et al)
-                r = 17.3, #titrated to known H2O2 production rate of 14uM / second Seaver & Imlay - may be closer to 10, good enough 
+                r = 17.3, #titrated to known H2O2 production rate of 14uM / second Seaver & Imlay - may be closer to 10, good enough
                 O3 = 56,  # fitted to give standing ROS conc of 1.9e-7 (Gonzalez - Fletcha)
                 R2 = 6.9e-3 * (7.7e-8 / 2.1e-6), # relative efficiency of oG binding to A compared to G binding to c (I1) is 7.7e-8:2.1e-6 (Maki)
-                Met1 = 1545,# fitted to reach expected carrying capacity from given glucose?
+                Met1 = 1545, # fitted to reach expected carrying capacity from given glucose?
                 CellVol = 1.0325e-12)#Kubitschek & Friske, 1986, mean of measurements in minimal media in exponential growth
 
 log_glc <- lseq(3.1e-4, 62e-4, 5)
 
 startsA <- c(iGlc_cyt = 0, dGTP_cyt = 0,  GDNA_cyt = 0, Gcell = 8.510873e-12, scale_Gcell2 = 0,
-           cytVol = CellVol * 2175, ROS = 0, odGTP = 0, mGDNA = 0, mGcell = 0, scale_mGcell = 0)
+             cytVol = CellVol * 2175, ROS = 0, odGTP = 0, mGDNA = 0, mGcell = 0, scale_mGcell = 0)
 
 parameters -> parA
 
@@ -76,15 +76,15 @@ modD2 <- function(t, state, parameters) {
     deGlc <- -U1 * (Gcell) * eGlc / (eGlc + Ks) #eGlc is mmol / ml total (molar conc)
     diGlc_cyt <- (U1 * (Gcell) * eGlc / (eGlc + Ks)) / cytVol - Met1 * M1 * iGlc_cyt
     ddGTP_cyt <- M1 * iGlc_cyt - I1 * dGTP_cyt - dGTP_cyt * ROS * O2
-    dGDNA_cyt <- I1 * dGTP_cyt - D1 * GDNA_cyt + C2 * mGDNA + S * mGDNA + R1 * odGTP 
+    dGDNA_cyt <- I1 * dGTP_cyt - D1 * GDNA_cyt + C2 * mGDNA + S * mGDNA + R1 * odGTP
     dGcell <- (D1 * GDNA_cyt + R2 * mGDNA) * cytVol
     dscale_Gcell2 <- ((D1 * GDNA_cyt + R2 * mGDNA) * cytVol) * 6.02e20 /  2357528
     dcytVol <- ((D1 * GDNA_cyt + R2 * mGDNA) * cytVol * 6.02e20 /  2357528) * CellVol #number cells x ml / cell
-    
+
     dROS <- -dGTP_cyt * ROS * O2 - O3 * ROS - kdiff * (ROS - ROS_ext)
-    
+
     dROS_ext <-  ROSC2 + (ROS - ROS_ext) * kdiff * (cytVol / (1 - cytVol))
-    
+
     dodGTP <- dGTP_cyt *  ROS * O2 - C1 * odGTP - I2 * odGTP - R1 * odGTP
     dmGDNA <- I2 * odGTP - D2 * mGDNA - C2 * mGDNA - S * mGDNA  - R2 * mGDNA
     dmGcell <- D2 * mGDNA * cytVol
@@ -93,8 +93,8 @@ modD2 <- function(t, state, parameters) {
   })
 }
 startsD2 <- c(iGlc_cyt = 0, dGTP_cyt = 0,  GDNA_cyt = 0, Gcell = 8.510873e-12,
-            scale_Gcell2 = 0, cytVol = CellVol * 2175, ROS = 0, ROS_ext = 0, odGTP = 0, mGDNA = 0, mGcell = 0,  
-            scale_mGcell = 0)
+              scale_Gcell2 = 0, cytVol = CellVol * 2175, ROS = 0, ROS_ext = 0, odGTP = 0, mGDNA = 0, mGcell = 0,
+              scale_mGcell = 0)
 parD2 <- c(parameters, ROSC2 = 6e-11)
 parD2["kdiff"] <- 70
 parD2["O2"] <- 4e+01
@@ -104,8 +104,8 @@ parD2["O2"] <- 4e+01
 
 DAMP.slopeS <- function(CHOSENPARAMETERS, CHOSENMODEL, starts) {
   times <- seq(0, 1e5, by = 10)
-  glc.data <- function(x) {as.data.frame(lsode(y = c(eGlc = x,  starts), 
-                                                times = times, func = CHOSENMODEL, 
+  glc.data <- function(x) {as.data.frame(lsode(y = c(eGlc = x,  starts),
+                                                times = times, func = CHOSENMODEL,
                                                 parms = CHOSENPARAMETERS)) -> dataframe}
   data.1 <- try(glc.data(log_glc[1]), silent = TRUE)
   data.2 <- try(glc.data(log_glc[2]), silent = TRUE)
@@ -117,7 +117,7 @@ DAMP.slopeS <- function(CHOSENPARAMETERS, CHOSENMODEL, starts) {
   x <- c(CELLS(data.1), CELLS(data.2), CELLS(data.3), CELLS(data.4), CELLS(data.5))
   list(NA, NA) -> result
   if (as.numeric(is.na(x) == FALSE) %>% sum() > 4) {
-    
+
     y <- c(mutants(data.1), mutants(data.2), mutants(data.3), mutants(data.4), mutants(data.5))
     stat <- function(dataframe) {
       lm(dataframe$scale_Gcell2[9000:10000]~c(9000:10000)) -> g
@@ -172,11 +172,11 @@ for (j in 1:nPars) {
 }
 nMult %>% tibble() %>% rowwise() -> sensitivity
 sensitivity %>% group_by(ParSet) %>% nest() -> sens.nest
-  
+
 sens.nest %>% add_column(Intercept = NA) -> sens.nest
 sens.nest %>% add_column(Gradient = NA) -> sens.nest
 sens.nest %>% add_column(Stationary = NA) -> sens.nest
-sens.nest %>% add_column(Tried = NA) -> sens.nest  
+sens.nest %>% add_column(Tried = NA) -> sens.nest
 sens.nest %<>% add_column(WT1 = NA)
 sens.nest %<>% add_column(WT2 = NA)
 sens.nest %<>% add_column(WT3 = NA)
@@ -194,24 +194,26 @@ sens.nest %<>% add_column(Stat2 = NA)
 sens.nest %<>% add_column(Stat3 = NA)
 sens.nest %<>% add_column(Stat4 = NA)
 sens.nest %<>% add_column(Stat5 = NA)
-  
+
 
 # Running GSA in parallel -------------------------------------------------
 
 foreach(i = 1:N_Runs,
-        .packages = c("tidyverse","magrittr","deSolve","emdbook"),
+        .options.future = list(
+          packages = c("tidyverse", "magrittr", "deSolve", "emdbook")
+        ),
         .combine = 'c') %dofuture% {
     try(DAMP.slopeS(sens.nest[[2]][[i]],
                     mod_list[[1]], starts_list[[1]]), silent = TRUE) -> mod
     if (class(mod) == "try - error") {
       return(list(rep(NA, 3),"Yes", rep(NA, 15)))
       mod <- list(NA, NA)
-      
+
       next}
     if (is.na(mod[1]) == TRUE) {
       return(list(rep(NA, 3),"Yes", rep(NA, 15)))
       mod <- list(NA, NA)
-      
+
       next}
     mod[1] -> model
     return(list(c(model[[1]]$coefficients[1],
