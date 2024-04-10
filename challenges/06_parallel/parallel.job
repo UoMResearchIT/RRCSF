@@ -1,0 +1,7 @@
+#!/bin/bash --login
+#$ -cwd
+#$ -o pjob.log
+#$ -e pjob.log
+
+module load apps/gcc/R/4.3.2
+R CMD BATCH --no-save --no-restore loop.R parallel.$JOB_ID.Rout

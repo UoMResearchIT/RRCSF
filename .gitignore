@@ -6,3 +6,11 @@
 real_example/results
 sandbox
 *.html
+
+Rplots.pdf
+*.Rout
+*.RData
+results
+/.quarto/
+docs
+renv
