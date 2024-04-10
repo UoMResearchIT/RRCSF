@@ -1,6 +1,7 @@
 ---
 title: "Preparing R code for unattended parallel execution"
-author: "Martin Herrerias Azcue"
+author: "Martin Herrerias Azcue (Research IT)"
+date: 2024-04-15
 format: 
   revealjs:
     center: false
@@ -15,64 +16,380 @@ knitr:
     eval: false
 ---
 
+```{r}
+#| eval: true
+#| echo: false
+
+clock_count = 0
+
+# Print current `clock_count` and add X minutes
+clock <- function(min) {
+  last <- clock_count
+  clock_count <<- clock_count + min
+  sprintf('%02d:%02d', last %/% 60, last %% 60)
+}
+
+challenge_idx = list()
+challenge <- function(id) {
+  challenge_idx <<- c(challenge_idx, id)
+  n = length(challenge_idx)
+  paste0("\U1F9E9 Challenge ", n, ".")
+}
+challenge_ref <- function(id) {
+  n = which(challenge_idx == id)
+  paste0("Challenge ", n)
+}
+```
+
+
 ## Overview
+::: {.content-visible when-profile="instructor"}
+### \[start: `r clock(15)`\]
+:::
 
 Make sure your code can run:  
+  
+**Somewhere else**
+
+-  Use (project/package) relative file paths
+-  Reproduce your environment (`renv.lock` or `DESCRIPTION`)
   
 **Unattended (CSF)**
 
 -  From the terminal, using `R [CMD BATCH]` or `Rscript`
--  Save your results to file (`write_csv`, `save`)
--  Save your plots to file (graphics devices and `ggsave`)
+-  Save results to disk (`write_csv`, `save`)
+-  Save plots to disk (graphics devices and `ggsave`)
   
-**Somewhere else**
+**In parallel**
 
--  Working directory and input/output file paths (`here`)
--  Package Management -- reproduce your environment (`renv`)
--  Check for custom settings `.Rprofile` and `.Renviron`
+-  Use all the cores in your laptop / reserved for your job
+
+## Use relative paths
+
+- Make sure to use `-cwd` when submitting a job
+
+- Make (double) sure the script is running where it's supposed to
+```{r}
+# Optional
+library(here)
+i_am("R/my_script.R")
+setwd(here())
+```
+
+- Make all paths relative to the project / package base dir.
+```{r}
+load("data/my_data.RData")
+source("R/my_functions.R")
+```
+
+- If you're saving results to subfolders, make sure they exist
+```{r}
+if (!dir.exists("results")) dir.create("results")
+write_csv(my_table, file = "results/my_table.csv")
+```
+
+## Save all results (and plots) to disk
+
+Using the `--save` flag saves the end state of `R` to `.RData`.  
+A more robust practice is to do so explicitly (and job-specific):
+```{r}
+job_id = Sys.getenv('JOB_ID', NA)
+save.image(file = paste0('my_results_', job_id, '.RData'))
+```
+
+Or save specific variables as tables, or binary data:
+```{r}
+write_csv(iris, "results/iris.csv")
+save(iris, file = "results/iris.RData")
+```
+
+## Graphics Devices
+
+By default, `R/Rscript` will change the *Graphics Device* when running from the shell, and you might notice your plots appear together on a file `Rplots.pdf`.
+
+You can tweak the file-names / format / appearance using `pdf`, `svg`, `png`, ... devices:
+```{r}
+pdf(file = "my_plot.pdf", width = 4, height = 3)
+# plot something
+dev.off()
+```
+
+For `ggplot2` plots, there's also:
+```{r}
+ggsave("plots/my_last_plot.pdf", 
+       width = 20, height = 15, units = "cm")
+```
+
+## `r challenge('refactor')` 'Prepare code to run on CSF' {.scrollable}
   
-**Parallel**
+- Copy the contents of `challenges/01_bad` to a new directory
+- Remove all absolute path references.
+- Make all paths **relative** to the new project directory
+- Save each plot individually to a `.png` file
+- At the end of the script, save the `KM` variable to `results/KM.RData`.
+  
+  
+```{r, file='../challenges/01_bad/R/main_script.R'}
+#| filename: "challenges/01_bad/R/main_script.R"
+#| code-line-numbers: true
+```
+```{r}
+#| filename: "challenges/01_bad/data-raw/prepare_data.R"
+#| file: "../challenges/01_bad/data-raw/prepare_data.R"
+#| code-line-numbers: true
+```
 
--  Use all the cores in your laptop before you try CSF
+## `r challenge_ref('refactor')`. (Solution) {.scrollable}
 
-## Running R from the shell (Where is my _source_ button?)
+```{r}
+#| filename: "challenges/02_portable/R/main_script.R"
+#| file: "../challenges/02_portable/R/main_script.R"
+#| code-line-numbers: "7-14,19-20,24,26-29"
+```
+```{r}
+#| filename: "challenges/02_portable/data-raw/prepare_data.R"
+#| file: "../challenges/02_portable/data-raw/prepare_data.R"
+#| code-line-numbers: "3-5"
+```
 
--  `Rscript [options] example.R [...] > example.log`
--  `R [options] < example.R [--args ...] > example.log`
--  `R CMD BATCH [options] ['--args ...'] example.R [example.Rout]`
 
-(_R_ / _Rscript_ have to be in your system's `PATH`)
 
+## Reproduce your environment -- R version
+::: {.content-visible when-profile="instructor"}
+### \[start: `r clock(15)`\]
+:::
+
+1. Make sure your **`R.version`** matches one of the _R_ versions installed on CSF  
+
+- Use `module search /R/` to see available options
+- Use e.g. `module load apps/gcc/R/4.3.2` to select one
+  
+You can install multiple R versions on your local machine:
+
+- `Rstudio`:  _Tools > Global Options > General (Basic) (R sessions) > R version_
+- Modify your `PATH`, or take a look at [rig](https://github.com/r-lib/rig)
+
+::: {.callout-note}
+## Most code will run just fine with minor version differences. 
+:::
+::: {.callout-caution}
+## **`renv` will record, but not change, the `R` version.**
+:::
+
+## Reproduce your environment -- Packages & Settings
+2. Make sure your **packages** match those installed on CSF.
+  
+Use `renv` / `packrat` to:  
+
+-  Auto-detect dependencies (`renv::dependencies`)
+-  Install missing packages (`renv::install`) 
+-  Document dependencies (`renv::snapshot`)
+-  Reproduce your environment (`renv::restore`)
+-  Keep different projects isolated
+
+3. Watch out for custom settings (`.Rprofile`, `.Renviron`, `.R/Makevars`) in your `HOME` directory. Try `usethis::edit_r_environ()` and friends.
+
+## Auto-detect, install, and log dependencies
+
+`install.packages("renv")` if required.
+  
+Then **`renv::init()`** to:
+
+- Create `renv` folder
+- Add `source("renv/activate.R")` to `.Rprofile`
+- _Try_* to resolve your dependencies
+- Link any packages you already have to the project library
+- _Try_* to install missing packages
+- Write a `renv.lock`
+
+> (*) If something fails, resolve with `renv::install(...)` or `install::packages(...)`
+
+When `renv::status()` is happy, `renv::snapshot()`
+  
+Full docs: <https://rstudio.github.io/renv/articles/renv.html>
+
+## `r challenge('02_portable')` Install missing libraries with `renv`
+
+- Start from your solution to `r challenge_ref('refactor')`, or from `challenges/02_portable`.
+- Use `renv` to auto-detect dependencies, install missing packages, and generate a `renv.lock` file.
+- Test the code on your local machine, at this point it should run
+
+
+
+## Local snapshot, copy to remote
+::: {.content-visible when-profile="instructor"}
+### \[start: `r clock(25)`\]
+:::
+
+#### On a **local** `R` console:
+```{r}
+renv::status()   # should reply `No issues found...`
+renv::snapshot()
+```
+
+#### Copy files to remote.  
+You tipically don't want to include (system-specific) `.Rprofile`, `.Renviron` and the complete `renv` folder. e.g.:
+```{bash}
+rsync -avz --exclude ".*" --exclude "renv" \
+  ./my_project <USER>@csf3.itservices.manchester.ac.uk:~/my_project
+```
+
+If you are cloning from a `git` repo, you might want to track these files (and `renv.settings.json`) in a system-specific branch, e.g.:
+
+```{bash}
+git clone --depth=1 -b CSF3 git@github.com:my_repo.git
+```
+
+## ... and remote restore
+
+#### On a **remote** R console (**interactive compute node session**):
+```{bash}
+local$ ssh <USER>@csf3.itservices.manchester.ac.uk
+login$ qrsh -l short
+@node$ module load apps/gcc/R/4.3.2
+@node$ R
+```
+
+```{r}
+> install.packages("renv")
+> setwd("~/my_project")
+> renv::restore()
+```
+
+If something goes wrong:
+
+-  troubleshoot with `renv::install` and `renv::status`; 
+-  **restart the `R` session**
+-  do a last `renv::status`
+
+## Explicit dependencies
+  
+**Option 1.** Build your library manually, from scratch:
+```{r}
+renv::init(bare = TRUE)
+renv::install('package@0.0.1')
+...
+```
+
+**Option 2.** Manually edit a `DESCRIPTION` file:
+
+See <https://r-pkgs.org/description.html>
+
+```{filename="DESCRIPTION"}
+...
+Imports:
+    dplyr,
+    tidyr (>= 1.1.0)
+```
+
+Then use:
+```{r}
+renv::settings$snapshot.type="explicit"
+```
+
+## config and settings {.scrollable}
+
+On **CSF**, disable _sandbox_ and set _locale_ to avoid warnings:
+```{bash,filename=".Renviron"}
+RENV_CONFIG_SANDBOX_ENABLED="false"
+LC_ALL="en_US.UTF-8"
+LANG="en_US.UTF-8"
+```
+
+**Bioconductor** packages require special setting:
+```{r}
+renv::settings$bioconductor.version("3.14")
+```
+
+**Ignore packages** that are only relevant for development, or for a particular platform:
+```{r}
+renv::settings$ignored.packages(c('devtools','Rmpi', ...))
+```
+
+For full list of options:
+
+-  User/Project config: <https://rstudio.github.io/renv/reference/config.html>
+-  Project settings: <https://rstudio.github.io/renv/reference/settings.html>
+-  Read about profiles: <https://rstudio.github.io/renv/articles/profiles.html>
+
+## `r challenge('restore')` Copy the code to CSF, and restore your enviroment
+
+- Start with your results from `r challenge_ref('02_portable')`
+- Make sure your local `renv.lock` is up to date with `renv::status`
+- Copy your code (excluding the `renv` directory) to `CSF`
+- Start an interactive session wiith `qrsh -l short`
+- Load the latest `R` module
+- Install `renv` (running `R` from your home folder)
+- Move to your project folder, and try `renv::restore`
+- Test using `source("R/main_script.R")` from the `R` console
+
+> HINT: to make things simpler, try this exercise copying your code to another (local) folder first
+
+::: {.content-visible when-profile="instructor"}
+## Break \[start: `r clock(10)`\]
+:::
+
+## Running R from the shell
+::: {.content-visible when-profile="instructor"}
+### \[start: `r clock(15)`\]
+:::
+```{bash}
+Rscript [options] example.R [...] &> example.log
+R [options] < example.R [--args ...] &> example.log
+R CMD BATCH [options] ['--args ...'] example.R [example.Rout]
+```
+
+Recommended [options]: `--no-restore`, `--no-save`  
+  
 They're roughly equivalent, but have different defaults,
 (type `R -h` to see all options).
 
--  `Rscript x` is equivalent to `R --quiet --no-echo -f x`
--  `R CMD BATCH x` is equivalent to `R < x > example.Rout`
-
-Recommended options: `--no-restore`, `--no-save`
+-  `Rscript x` is similar to `R --quiet --no-echo -f x`
+-  `R CMD BATCH x` is similar to `R -f x &> example.Rout`.  
+   It also prints a handy `proc.time()` at the end of the script.
   
-There's also `littler`. See "Why (or when) is Rscript (or littler) better than R CMD BATCH?" [Stackoverflow](https://stackoverflow.com/questions/21969145/why-or-when-is-rscript-or-littler-better-than-r-cmd-batch)
+`R` / `Rscript` have to be in the system's `PATH`.  
+On CSF you achieve that using: `module load apps/gcc/R/...`
+  
+  
+> NOTE: There's also `littler`. See "Why (or when) is Rscript (or littler) better than R CMD BATCH?" [Stackoverflow](https://stackoverflow.com/questions/21969145/why-or-when-is-rscript-or-littler-better-than-r-cmd-batch)
 
-## `renv`
 
-Make sure your `R.version` matches one of the _R_ versions installed on CSF (use `module search /R/` to see available options).
+## `r challenge('rcmd')` Submit the script as a job
 
-You can install multiple R versions on your local machine and select among them using: _Tools > Global Options > General (Basic) (R sessions) > R version_
+**On your local machine:**
 
-Most code will run just fine with minor version differences.
+- Run `R/main_script.R` using `R CMD BATCH` and `Rscript`
+- Play with different flags, e.g. `--save` and `--no-save`, `--echo` and `--no-echo`
+- Check your log files after each run. When you're happy...
 
-```{r}
-options(renv.settings.ignored.packages) = c('Rmpi')
-renv::settings$ignored.packages()
+**On CSF3:** Place your command in a job script, e.g.:
 
-# TODO: check if this is necessary
-options(renv.config.autoloader.enabled = FALSE)
-renv::config$autoloader.enabled()
+```{bash}
+#| filename: csf3.job
+#!/bin/bash --login
+#$ -cwd
+module load apps/gcc/R/4.2.3
+R CMD BATCH --no-save --no-restore R/main_script.R
+```
+  
+... and submit from a login node:
+```{bash}
+qsub -l short csf3.job
+```
+
+Alternatively, use `-V -b y` to submit the command directly, e.g.:
+```{bash}
+module load apps/gcc/R/4.2.3
+qsub -V -b y -l short "Rscript R/main_script.R > main_script.log"
 ```
 
 ## Parallelization
+::: {.content-visible when-profile="instructor"}
+### \[start: `r clock(20)`\]
+:::
 
-> Use all the cores in your laptop before you try CSF  
+**Use all the cores available for your job (but not more)**
   
 Parallel computing is a world on its own:  
 <https://cran.r-project.org/web/views/HighPerformanceComputing.html>  
@@ -90,8 +407,8 @@ If you do `sessionInfo()` you should see:
 
 ```
 Matrix products: default
-BLAS:   /opt/apps/apps/gcc/R/4.2.2/lib64/R/lib/libRblas.so
-LAPACK: /opt/apps/apps/gcc/R/4.2.2/lib64/R/lib/libRlapack.so
+BLAS:   /opt/apps/apps/gcc/R/4.3.2/lib64/R/lib/libRblas.so
+LAPACK: /opt/apps/apps/gcc/R/4.3.2/lib64/R/lib/libRlapack.so
 ```
 
 -  `pnmath` and `romp` are experimental projects to use OpenMP directives in base R functions.  
@@ -110,20 +427,10 @@ Series of taks that can run asynchronously, but have non-trivial dependencies to
 
 Series of tasks that are independent from the rest,
 e.g. `apply` or `purrr::map` calls, or plain `for` loops:  
-  
-```{r}
-slow_fcn <- function(x) {
-  Sys.sleep(runif(1)*0.1)
-  x^2
-}
-x <- 1:100
-y <- c()
 
-system.time(
-  for (i in seq_along(x)) {
-    y[i] = slow_fcn(x[i])
-  }
-)
+```{r}
+#| file: "../challenges/05_serial/loop.R"
+#| filename: loop.R
 ```
 
 ## `foreach() %dopar%` with `registerDo...`
@@ -137,149 +444,83 @@ workers = as.integer(Sys.getenv("NSLOTS", unset = detectCores()))
 cl <- parallel::makeCluster(workers)
 doParallel::registerDoParallel(cl)
 
-system.time(
-  y <- foreach(xi = x) %dopar% {
-    slow_fcn(xi)
-  }
-)
+y <- foreach(x = 1:iter) %dopar% {
+  slow_fcn(x)
+}
 
 stopCluster(cl)
 ```
 
 ## `foreach() %dofuture%`
 
-Henrik Bengtsson, "%dofuture% - a Better foreach() Parallelization Operator than %dopar%",
-June 26, 2023 in R. <https://www.jottr.org/2023/06/26/dofuture/>
-
 ```{r}
 library(foreach)
 library(doFuture)
 
-workers = availableCores() # correctly detects NSLOTS
-plan(multisession, workers = workers)
+# correctly detects NSLOTS on SGE
+plan(multisession, workers = availableCores())
 
-system.time(
-  y <- foreach(xi = x) %dofuture% {
-    slow_fcn(xi)
-  }
-)
+y <- foreach(x = 1:iter) %dofuture% {
+  slow_fcn(x)
+}
 ```
+
 - Uniform syntax (independent of cluster type)
 - Better dependency tracking
 - Handling of seeded random numbers
 
+Henrik Bengtsson, "%dofuture% - a Better foreach() Parallelization Operator than %dopar%",
+June 26, 2023 in R. <https://www.jottr.org/2023/06/26/dofuture/>
+
+## `r challenge('foreach')` Parallelize a for loop
+
+- Copy the contents of `challenges/05_serial` to a new directory
+- Use `foreach ... %dofuture%` to replace the `for` loop.
+- You might have to install the required `foreach` and `doFuture` packages,
+  e.g. usiing `renv::init`
+- Test your script (locally) with `R CMD BATCH loop.R`
+- Test your script on CSF, providing the `-pe smp.pe N` option, e.g.:
+```{bash}
+qsub -V -b y -l short -pe smp.pe 4 "R CMD BATCH loop.R"
+```
+
+## Caveats: Non-scalar outputs, random numbers
+
+- Use a custom `.combine` to merge the results evaluated at different cores.
+- **Random numbers require special care** in parallel processing
+
+```{r}
+#| file: ../examples/foreach_dataframe.R
+#| filename: foreach_dataframe.R
+#| code-line-numbers: "5-8,16-17"
+```
+
+## Caveats: Progress tracking
+
+Iterations will usually not be evaluated in order, so progress tracking becomes challenging.
+`%dofuture` offers support for [progressr](https://cran.r-project.org/web/packages/progressr/vignettes/progressr-intro.html)
+
+```{r}
+#| file: ../examples/foreach_dataframe.R
+#| filename: foreach_dataframe.R
+#| code-line-numbers: "3,10,14,19,22-23"
+```
+```{r, filename=".Renviron"}
+R_PROGRESSR_ENABLE="true"
+```
 
 ## Mapping alternatives {.scrollable}
+::: {.content-visible when-profile="instructor"}
+### \[start: `r clock(15)`\]
+:::
 
 See: <https://future.apply.futureverse.org/#role>
 
-<table>
-<tr>
-<th>Package</th>
-<th>Functions</th>
-<th>Backends</th>
-</tr>
+```{r}
+library(future.apply)
+plan(multisession) ## Run in parallel on local computer
 
-<tr style="vertical-align: top">
-<td>
-<a href="https://cran.r-project.org/package=future.apply"><strong>future.apply</strong></a><br>
-<br>
-</td>
-<td>
-Future-versions of common goto <code>*apply()</code> functions available in base R (of the <strong>base</strong> package):<br>
-<code>future_apply()</code>, 
-<code>future_by()</code>, 
-<code>future_eapply()</code>, 
-<code>future_lapply()</code>, 
-<code>future_Map()</code>, 
-<code>future_mapply()</code>, 
-<code>future_.mapply()</code>, 
-<code>future_replicate()</code>,
-<code>future_sapply()</code>,
-<code>future_tapply()</code>, and 
-<code>future_vapply()</code>.
-<br>
-<em>The following function is not implemented:</em><br>
-<code>future_rapply()</code><br>
-</td>
-<td>
-All <strong>future</strong> backends
-</td>
-</tr>
-
-<tr style="vertical-align: top">
-<td>
-<strong>parallel</strong>
-</td>
-<td>
-<code>mclapply()</code>, <code>mcmapply()</code>,
-<code>clusterMap()</code>, <code>parApply()</code>, <code>parLapply()</code>, <code>parSapply()</code>, ...
-</td>
-<td>
-Built-in and conditional on operating system</a>
-</td>
-</tr>
-
-<tr style="vertical-align: top">
-<td>
-<a href="https://cran.r-project.org/package=foreach"><strong>foreach</strong></a>
-</td>
-<td>
-<code>foreach()</code>,
-<code>times()</code>
-</td>
-<td>
-All <strong>future</strong> backends via <a href="https://cran.r-project.org/package=doFuture"><strong>doFuture</strong></a>
-</td>
-</tr>
-
-<tr style="vertical-align: top">
-<td>
-<a href="https://cran.r-project.org/package=furrr"><strong>furrr</strong></a>
-</td>
-<td>
-<code>future_imap()</code>,
-<code>future_map()</code>,
-<code>future_pmap()</code>,
-<code>future_map2()</code>,
-...
-</td>
-<td>
-All <strong>future</strong> backends
-</td>
-</tr>
-
-<tr style="vertical-align: top">
-<td>
-<a href="https://bioconductor.org/packages/release/bioc/html/BiocParallel.html"><strong>BiocParallel</strong></a>
-</td>
-<td>
-Bioconductor's parallel mappers:<br>
-<code>bpaggregate()</code>,
-<code>bpiterate()</code>,
-<code>bplapply()</code>, and
-<code>bpvec()</code>
-</td>
-<td>
-All <strong>future</strong> backends via <a href="https://cran.r-project.org/package=doFuture"><strong>doFuture</strong></a> (because it supports <strong>foreach</strong>) or via <a href="https://github.com/HenrikBengtsson/BiocParallel.FutureParam"><strong>BiocParallel.FutureParam</strong></a> (direct BiocParallelParam support; prototype)
-</td>
-</tr>
-
-
-<tr style="vertical-align: top">
-<td>
-<a href="https://cran.r-project.org/package=plyr"><strong>plyr</strong></a>
-</td>
-<td>
-<code>**ply(..., .parallel = TRUE)</code> functions:<br>
-<code>aaply()</code>,
-<code>ddply()</code>,
-<code>dlply()</code>,
-<code>llply()</code>, ...
-</td>
-<td>
-All <strong>future</strong> backends via <a href="https://cran.r-project.org/package=doFuture"><strong>doFuture</strong></a> (because it uses <strong>foreach</strong> internally)
-</td>
-</tr>
-
-</table>
+library(datasets)
+library(stats)
+y <- future_lapply(mtcars, FUN = mean, trim = 0.10)
+```
