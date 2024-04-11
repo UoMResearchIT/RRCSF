@@ -289,11 +289,9 @@ renv::settings$snapshot.type="explicit"
 
 ## config and settings {.scrollable}
 
-On **CSF**, disable _sandbox_ and set _locale_ to avoid warnings:
+On **CSF**, disable _sandbox_ to avoid warnings:
 ```{bash,filename=".Renviron"}
 RENV_CONFIG_SANDBOX_ENABLED="false"
-LC_ALL="en_US.UTF-8"
-LANG="en_US.UTF-8"
 ```
 
 **Bioconductor** packages require special setting:
