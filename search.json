@@ -1,0 +1,212 @@
+[
+  {
+    "objectID": "MPI/RMPI.html#installing-rmpi",
+    "href": "MPI/RMPI.html#installing-rmpi",
+    "title": "Multi-node jobs (Rmpi)",
+    "section": "Installing Rmpi",
+    "text": "Installing Rmpi\n\nmpi.include &lt;- Sys.getenv(\"MPI_INCLUDE\")\nmpi.lib &lt;- Sys.getenv(\"MPI_LIB\")\nconfig.args &lt;- c(\n  paste0(\"--with-Rmpi-include=\", mpi.include),\n  paste0(\"--with-Rmpi-libpath=\", mpi.lib),\n  \"--with-Rmpi-type=OPENMPI\"\n)\ninstall.packages(\"Rmpi\", configure.args = config.args)"
+  },
+  {
+    "objectID": "MPI/RMPI.html#r-script",
+    "href": "MPI/RMPI.html#r-script",
+    "title": "Multi-node jobs (Rmpi)",
+    "section": "R script",
+    "text": "R script\n\nlibrary(Rmpi)\nlibrary(snow)\n\nlibrary(doFuture)\nlibrary(foreach)\n\nn_cores &lt;- availableCores()\nworkers &lt;- mpi.universe.size() - 1\n\ncat(\"availableCores reports\", n_cores, \"cores\\n\")\ncat(\"mpi.universe.size reports\", workers + 1, \"workers\\n\")\n\ncl &lt;- snow::makeMPIcluster(count = workers, type = \"MPI\")\n\nregisterDoFuture()\nplan(cluster, workers = cl)\n \n# ...\n# foreach(x) %dopar% { ... }\n# ...\n\n# IMPORTANT: if you don't use these two, the job will hang and never finish\n# (the same happens if you try to use snow::stopCluster)\nmpi.close.Rslaves()\nmpi.exit()"
+  },
+  {
+    "objectID": "MPI/RMPI.html#qsub-script",
+    "href": "MPI/RMPI.html#qsub-script",
+    "title": "Multi-node jobs (Rmpi)",
+    "section": "qsub script",
+    "text": "qsub script\n\n#!/bin/bash --login\n#$ -cwd\n#$ -pe mpi-24-ib.pe 48   # must be 48 or more and a multiple of 24\n\nmodule load mpi/gcc/openmpi/4.1.2\nmodule load apps/gcc/R/4.2.2\n\nmpirun --bind-to none -n 1 R CMD BATCH --no-restore --no-save &lt;your_script&gt;.R\n\nVinh Nguyen, “Scheduled Parallel Computing with R: R + Rmpi + OpenMPI + Sun Grid Engine (SGE)”” R bloggers, January 20, 2010\nLuke Tierney, “Simple Network of Workstations for R” http://homepage.divms.uiowa.edu/~luke/R/cluster/cluster.html#NWD4"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#overview",
+    "href": "notes/R_on_CSF.html#overview",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Overview",
+    "text": "Overview\nMake sure your code can run:\nSomewhere else\n\nUse (project/package) relative file paths\nReproduce your environment (renv.lock or DESCRIPTION)\n\nUnattended (CSF)\n\nFrom the terminal, using R [CMD BATCH] or Rscript\nSave results to disk (write_csv, save)\nSave plots to disk (graphics devices and ggsave)\n\nIn parallel\n\nUse all the cores in your laptop / reserved for your job"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#use-relative-paths",
+    "href": "notes/R_on_CSF.html#use-relative-paths",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Use relative paths",
+    "text": "Use relative paths\n\nMake sure to use -cwd when submitting a job\nMake (double) sure the script is running where it’s supposed to\n\n\n# Optional\nlibrary(here)\ni_am(\"R/my_script.R\")\nsetwd(here())\n\n\nMake all paths relative to the project / package base dir.\n\n\nload(\"data/my_data.RData\")\nsource(\"R/my_functions.R\")\n\n\nIf you’re saving results to subfolders, make sure they exist\n\n\nif (!dir.exists(\"results\")) dir.create(\"results\")\nwrite_csv(my_table, file = \"results/my_table.csv\")"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#save-all-results-and-plots-to-disk",
+    "href": "notes/R_on_CSF.html#save-all-results-and-plots-to-disk",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Save all results (and plots) to disk",
+    "text": "Save all results (and plots) to disk\nUsing the --save flag saves the end state of R to .RData.\nA more robust practice is to do so explicitly (and job-specific):\n\njob_id = Sys.getenv('JOB_ID', NA)\nsave.image(file = paste0('my_results_', job_id, '.RData'))\n\nOr save specific variables as tables, or binary data:\n\nwrite_csv(iris, \"results/iris.csv\")\nsave(iris, file = \"results/iris.RData\")"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#graphics-devices",
+    "href": "notes/R_on_CSF.html#graphics-devices",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Graphics Devices",
+    "text": "Graphics Devices\nBy default, R/Rscript will change the Graphics Device when running from the shell, and you might notice your plots appear together on a file Rplots.pdf.\nYou can tweak the file-names / format / appearance using pdf, svg, png, … devices:\n\npdf(file = \"my_plot.pdf\", width = 4, height = 3)\n# plot something\ndev.off()\n\nFor ggplot2 plots, there’s also:\n\nggsave(\"plots/my_last_plot.pdf\", \n       width = 20, height = 15, units = \"cm\")"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#challenge-1.-prepare-code-to-run-on-csf",
+    "href": "notes/R_on_CSF.html#challenge-1.-prepare-code-to-run-on-csf",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "🧩 Challenge 1. ‘Prepare code to run on CSF’",
+    "text": "🧩 Challenge 1. ‘Prepare code to run on CSF’\n\nCopy the contents of challenges/01_bad to a new directory\nRemove all absolute path references.\nMake all paths relative to the new project directory\nSave each plot individually to a .png file\nAt the end of the script, save the KM variable to results/KM.RData.\n\n\n\n\nchallenges/01_bad/R/main_script.R\n\n# Plots kmeans clustering of iris data\n\nlibrary(dplyr)\nlibrary(cluster)\nlibrary(ggplot2)\n\nsetwd(\"/home/martin/R/RonCSF/bad_example/R\")\nsource(\"../data-raw/prepare_data.R\")\n\nload(\"../data/iris.RData\")\n\nshow(\n  iris |&gt;\n    ggplot(aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +\n    geom_point(size = 4) + theme_minimal()\n)\n\nset.seed(42)\nKM &lt;- iris |&gt; select(-Species) |&gt; kmeans(centers = 3, nstart = 20)\nclusplot(iris, KM$cluster, color = TRUE, shade = TRUE)\n\n\n\n\n\nchallenges/01_bad/data-raw/prepare_data.R\n\n# Writes the example `iris` data set to data/iris.RData\n\nsetwd(\"/home/martin/R/RonCSF/bad_example/data\")\n\nsave(iris, file = \"iris.RData\")"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#challenge-1.-solution",
+    "href": "notes/R_on_CSF.html#challenge-1.-solution",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Challenge 1. (Solution)",
+    "text": "Challenge 1. (Solution)\n\n\n\nchallenges/02_portable/R/main_script.R\n\n# Plots kmeans clustering of iris data\n\nlibrary(dplyr)\nlibrary(cluster)\nlibrary(ggplot2)\n\nlibrary(here)\ni_am(\"R/main_script.R\")\nsetwd(here())\n\nsource(\"data-raw/prepare_data.R\")\nload(\"data/iris.RData\")\n\nif (!dir.exists(\"results\")) dir.create(\"results\")\n\niris |&gt;\n  ggplot(aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +\n  geom_point(size = 4) + theme_minimal()\nggsave(\"results/iris_plot.png\", width = 600, height = 480, units = \"px\", dpi = 92)\n\nset.seed(42)\nKM &lt;- iris |&gt; select(-Species) |&gt; kmeans(centers = 3, nstart = 20)\n\npng(file = \"results/KM_plot.png\", width = 600, height = 480)\nclusplot(iris, KM$cluster, color = TRUE, shade = TRUE)\ndev.off()\n\nsave(file = \"results/KM.RData\", KM)\n\n\n\n\n\nchallenges/02_portable/data-raw/prepare_data.R\n\n# Writes the example `iris` data set to data/iris.RData\n\nif (!dir.exists(\"data\")) dir.create(\"data\")\n\nsave(iris, file = \"data/iris.RData\")"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#reproduce-your-environment-r-version",
+    "href": "notes/R_on_CSF.html#reproduce-your-environment-r-version",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Reproduce your environment – R version",
+    "text": "Reproduce your environment – R version\n\nMake sure your R.version matches one of the R versions installed on CSF\n\n\nUse module search /R/ to see available options\nUse e.g. module load apps/gcc/R/4.3.2 to select one\n\nYou can install multiple R versions on your local machine:\n\nRstudio: Tools &gt; Global Options &gt; General (Basic) (R sessions) &gt; R version\nModify your PATH, or take a look at rig\n\n\n\n\n\n\n\nMost code will run just fine with minor version differences.\n\n\n\n\n\n\n\n\n\n\n\n\nrenv will record, but not change, the R version."
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#reproduce-your-environment-packages-settings",
+    "href": "notes/R_on_CSF.html#reproduce-your-environment-packages-settings",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Reproduce your environment – Packages & Settings",
+    "text": "Reproduce your environment – Packages & Settings\n\nMake sure your packages match those installed on CSF.\n\nUse renv / packrat to:\n\nAuto-detect dependencies (renv::dependencies)\nInstall missing packages (renv::install)\nDocument dependencies (renv::snapshot)\nReproduce your environment (renv::restore)\nKeep different projects isolated\n\n\nWatch out for custom settings (.Rprofile, .Renviron, .R/Makevars) in your HOME directory. Try usethis::edit_r_environ() and friends."
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#auto-detect-install-and-log-dependencies",
+    "href": "notes/R_on_CSF.html#auto-detect-install-and-log-dependencies",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Auto-detect, install, and log dependencies",
+    "text": "Auto-detect, install, and log dependencies\ninstall.packages(\"renv\") if required.\nThen renv::init() to:\n\nCreate renv folder\nAdd source(\"renv/activate.R\") to .Rprofile\nTry* to resolve your dependencies\nLink any packages you already have to the project library\nTry* to install missing packages\nWrite a renv.lock\n\n\n(*) If something fails, resolve with renv::install(...) or install::packages(...)\n\nWhen renv::status() is happy, renv::snapshot()\nFull docs: https://rstudio.github.io/renv/articles/renv.html"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#challenge-2.-install-missing-libraries-with-renv",
+    "href": "notes/R_on_CSF.html#challenge-2.-install-missing-libraries-with-renv",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "🧩 Challenge 2. Install missing libraries with renv",
+    "text": "🧩 Challenge 2. Install missing libraries with renv\n\nStart from your solution to Challenge 1, or from challenges/02_portable.\nUse renv to auto-detect dependencies, install missing packages, and generate a renv.lock file.\nTest the code on your local machine, at this point it should run"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#local-snapshot-copy-to-remote",
+    "href": "notes/R_on_CSF.html#local-snapshot-copy-to-remote",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Local snapshot, copy to remote",
+    "text": "Local snapshot, copy to remote\nOn a local R console:\n\nrenv::status()   # should reply `No issues found...`\nrenv::snapshot()\n\nCopy files to remote.\nYou tipically don’t want to include (system-specific) .Rprofile, .Renviron and the complete renv folder. e.g.:\n\nrsync -avz --exclude \".*\" --exclude \"renv\" \\\n  ./my_project &lt;USER&gt;@csf3.itservices.manchester.ac.uk:~/my_project\n\nIf you are cloning from a git repo, you might want to track these files (and renv.settings.json) in a system-specific branch, e.g.:\n\ngit clone --depth=1 -b CSF3 git@github.com:my_repo.git"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#and-remote-restore",
+    "href": "notes/R_on_CSF.html#and-remote-restore",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "… and remote restore",
+    "text": "… and remote restore\nOn a remote R console (interactive compute node session):\n\nlocal$ ssh &lt;USER&gt;@csf3.itservices.manchester.ac.uk\nlogin$ qrsh -l short\n@node$ module load apps/gcc/R/4.3.2\n@node$ R\n\n\n&gt; install.packages(\"renv\")\n&gt; setwd(\"~/my_project\")\n&gt; renv::restore()\n\nIf something goes wrong:\n\ntroubleshoot with renv::install and renv::status;\nrestart the R session\ndo a last renv::status"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#explicit-dependencies",
+    "href": "notes/R_on_CSF.html#explicit-dependencies",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Explicit dependencies",
+    "text": "Explicit dependencies\nOption 1. Build your library manually, from scratch:\n\nrenv::init(bare = TRUE)\nrenv::install('package@0.0.1')\n...\n\nOption 2. Manually edit a DESCRIPTION file:\nSee https://r-pkgs.org/description.html\n\n\nDESCRIPTION\n\n...\nImports:\n    dplyr,\n    tidyr (&gt;= 1.1.0)\n\nThen use:\n\nrenv::settings$snapshot.type=\"explicit\""
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#config-and-settings",
+    "href": "notes/R_on_CSF.html#config-and-settings",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "config and settings",
+    "text": "config and settings\nOn CSF, disable sandbox to avoid warnings:\n\n\n\n.Renviron\n\nRENV_CONFIG_SANDBOX_ENABLED=\"false\"\n\n\nBioconductor packages require special setting:\n\nrenv::settings$bioconductor.version(\"3.14\")\n\nIgnore packages that are only relevant for development, or for a particular platform:\n\nrenv::settings$ignored.packages(c('devtools','Rmpi', ...))\n\nFor full list of options:\n\nUser/Project config: https://rstudio.github.io/renv/reference/config.html\nProject settings: https://rstudio.github.io/renv/reference/settings.html\nRead about profiles: https://rstudio.github.io/renv/articles/profiles.html"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#challenge-3.-copy-the-code-to-csf-and-restore-your-enviroment",
+    "href": "notes/R_on_CSF.html#challenge-3.-copy-the-code-to-csf-and-restore-your-enviroment",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "🧩 Challenge 3. Copy the code to CSF, and restore your enviroment",
+    "text": "🧩 Challenge 3. Copy the code to CSF, and restore your enviroment\n\nStart with your results from Challenge 2\nMake sure your local renv.lock is up to date with renv::status\nCopy your code (excluding the renv directory) to CSF\nStart an interactive session wiith qrsh -l short\nLoad the latest R module\nInstall renv (running R from your home folder)\nMove to your project folder, and try renv::restore\nTest using source(\"R/main_script.R\") from the R console\n\n\nHINT: to make things simpler, try this exercise copying your code to another (local) folder first"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#running-r-from-the-shell",
+    "href": "notes/R_on_CSF.html#running-r-from-the-shell",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Running R from the shell",
+    "text": "Running R from the shell\n\nRscript [options] example.R [...] &&gt; example.log\nR [options] &lt; example.R [--args ...] &&gt; example.log\nR CMD BATCH [options] ['--args ...'] example.R [example.Rout]\n\nRecommended [options]: --no-restore, --no-save\nThey’re roughly equivalent, but have different defaults, (type R -h to see all options).\n\nRscript x is similar to R --quiet --no-echo -f x\nR CMD BATCH x is similar to R -f x &&gt; example.Rout.\nIt also prints a handy proc.time() at the end of the script.\n\nR / Rscript have to be in the system’s PATH.\nOn CSF you achieve that using: module load apps/gcc/R/...\n\nNOTE: There’s also littler. See “Why (or when) is Rscript (or littler) better than R CMD BATCH?” Stackoverflow"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#challenge-4.-submit-the-script-as-a-job",
+    "href": "notes/R_on_CSF.html#challenge-4.-submit-the-script-as-a-job",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "🧩 Challenge 4. Submit the script as a job",
+    "text": "🧩 Challenge 4. Submit the script as a job\nOn your local machine:\n\nRun R/main_script.R using R CMD BATCH and Rscript\nPlay with different flags, e.g. --save and --no-save, --echo and --no-echo\nCheck your log files after each run. When you’re happy…\n\nOn CSF3: Place your command in a job script, e.g.:\n\n\n\ncsf3.job\n\n#!/bin/bash --login\n#$ -cwd\nmodule load apps/gcc/R/4.2.3\nR CMD BATCH --no-save --no-restore R/main_script.R\n\n\n… and submit from a login node:\n\nqsub -l short csf3.job\n\nAlternatively, use -V -b y to submit the command directly, e.g.:\n\nmodule load apps/gcc/R/4.2.3\nqsub -V -b y -l short \"Rscript R/main_script.R &gt; main_script.log\""
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#parallelization",
+    "href": "notes/R_on_CSF.html#parallelization",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Parallelization",
+    "text": "Parallelization\nUse all the cores available for your job (but not more)\nParallel computing is a world on its own:\nhttps://cran.r-project.org/web/views/HighPerformanceComputing.html\n\nImplicit parallelism\nExplicit parallelism\n\nDistributed (memory) processing\n“Embarrasingly parallel” processing"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#implicit-parallelism",
+    "href": "notes/R_on_CSF.html#implicit-parallelism",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Implicit parallelism",
+    "text": "Implicit parallelism\n\nVector / Matrix operations should run faster on CSF “out of the box”.\n\nIf you do sessionInfo() you should see:\nMatrix products: default\nBLAS:   /opt/apps/apps/gcc/R/4.3.2/lib64/R/lib/libRblas.so\nLAPACK: /opt/apps/apps/gcc/R/4.3.2/lib64/R/lib/libRlapack.so\n\npnmath and romp are experimental projects to use OpenMP directives in base R functions.\n“Similar functionality is expected to become integrated into R ‘eventually’.” CRAN/HPC"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#distributed-processing",
+    "href": "notes/R_on_CSF.html#distributed-processing",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Distributed processing",
+    "text": "Distributed processing\nSeries of taks that can run asynchronously, but have non-trivial dependencies to each other.\n\nRmpi low-level MPI directives\nmirai Minimalist Async Evaluation Framework for R\nfuture “simple and uniform” asynchronous evaluation (wraps mirai / callr)\ntargets Make-like pipeline tool for R"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#embarrasingly-parallel-processing",
+    "href": "notes/R_on_CSF.html#embarrasingly-parallel-processing",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "“Embarrasingly parallel” processing",
+    "text": "“Embarrasingly parallel” processing\nSeries of tasks that are independent from the rest, e.g. apply or purrr::map calls, or plain for loops:\n\n\n\nloop.R\n\n# Runs `iter` dummy tasks of `sleep` seconds, sequentially\n\nsleep &lt;- 0.1\niter &lt;- 24\n\ncat(paste(\"Running\", iter, \"iterations of\", sleep, \"seconds sequentially\\n\"))\n\nslow_fcn &lt;- function(x) {\n  Sys.sleep(sleep)\n  x^2\n}\n\ny &lt;- c()\nfor (i in 1:iter) {\n  y[i] &lt;- slow_fcn(i)\n}"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#foreach-dopar-with-registerdo...",
+    "href": "notes/R_on_CSF.html#foreach-dopar-with-registerdo...",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "foreach() %dopar% with registerDo...",
+    "text": "foreach() %dopar% with registerDo...\n\nlibrary(parallel)\nlibrary(foreach)\nlibrary(doParallel) # there's also doMC, doSNOW, doMPI\n\nworkers = as.integer(Sys.getenv(\"NSLOTS\", unset = detectCores()))\ncl &lt;- parallel::makeCluster(workers)\ndoParallel::registerDoParallel(cl)\n\ny &lt;- foreach(x = 1:iter) %dopar% {\n  slow_fcn(x)\n}\n\nstopCluster(cl)"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#foreach-dofuture",
+    "href": "notes/R_on_CSF.html#foreach-dofuture",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "foreach() %dofuture%",
+    "text": "foreach() %dofuture%\n\nlibrary(foreach)\nlibrary(doFuture)\n\n# correctly detects NSLOTS on SGE\nplan(multisession, workers = availableCores())\n\ny &lt;- foreach(x = 1:iter) %dofuture% {\n  slow_fcn(x)\n}\n\n\nUniform syntax (independent of cluster type)\nBetter dependency tracking\nHandling of seeded random numbers\n\nHenrik Bengtsson, “%dofuture% - a Better foreach() Parallelization Operator than %dopar%”, June 26, 2023 in R. https://www.jottr.org/2023/06/26/dofuture/"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#challenge-5.-parallelize-a-for-loop",
+    "href": "notes/R_on_CSF.html#challenge-5.-parallelize-a-for-loop",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "🧩 Challenge 5. Parallelize a for loop",
+    "text": "🧩 Challenge 5. Parallelize a for loop\n\nCopy the contents of challenges/05_serial to a new directory\nUse foreach ... %dofuture% to replace the for loop.\nYou might have to install the required foreach and doFuture packages, e.g. usiing renv::init\nTest your script (locally) with R CMD BATCH loop.R\nTest your script on CSF, providing the -pe smp.pe N option, e.g.:\n\n\nqsub -V -b y -l short -pe smp.pe 4 \"R CMD BATCH loop.R\""
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#caveats-non-scalar-outputs-random-numbers",
+    "href": "notes/R_on_CSF.html#caveats-non-scalar-outputs-random-numbers",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Caveats: Non-scalar outputs, random numbers",
+    "text": "Caveats: Non-scalar outputs, random numbers\n\nUse a custom .combine to merge the results evaluated at different cores.\nRandom numbers require special care in parallel processing\n\n\n\n\nforeach_dataframe.R\n\nlibrary(doFuture)\nlibrary(foreach)\nlibrary(progressr)\n\nslow_table &lt;- function(i, n) {\n  Sys.sleep(0.1)\n  data.frame(itr = i, idx = 1:n, x = runif(n))\n}\n\nparallel_tables &lt;- function(iter, n) {\n\n  plan(multisession, workers = 2)\n\n  progress &lt;- progressor(along = 1:iter)\n  foreach(i = 1:iter,\n          .combine = rbind,\n          .options.future = list(seed = TRUE)) %dofuture% {\n\n    progress(sprintf(\"i=%g\", i))\n    slow_table(i, n)\n  }\n}\ndf &lt;- parallel_tables(100, 3)"
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#caveats-progress-tracking",
+    "href": "notes/R_on_CSF.html#caveats-progress-tracking",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Caveats: Progress tracking",
+    "text": "Caveats: Progress tracking\nIterations will usually not be evaluated in order, so progress tracking becomes challenging. %dofuture offers support for progressr\n\n\n\nforeach_dataframe.R\n\nlibrary(doFuture)\nlibrary(foreach)\nlibrary(progressr)\n\nslow_table &lt;- function(i, n) {\n  Sys.sleep(0.1)\n  data.frame(itr = i, idx = 1:n, x = runif(n))\n}\n\nparallel_tables &lt;- function(iter, n) {\n\n  plan(multisession, workers = 2)\n\n  progress &lt;- progressor(along = 1:iter)\n  foreach(i = 1:iter,\n          .combine = rbind,\n          .options.future = list(seed = TRUE)) %dofuture% {\n\n    progress(sprintf(\"i=%g\", i))\n    slow_table(i, n)\n  }\n}\ndf &lt;- parallel_tables(100, 3)\n\n\n\n\n\n.Renviron\n\nR_PROGRESSR_ENABLE=\"true\""
+  },
+  {
+    "objectID": "notes/R_on_CSF.html#mapping-alternatives",
+    "href": "notes/R_on_CSF.html#mapping-alternatives",
+    "title": "Preparing R code for unattended parallel execution",
+    "section": "Mapping alternatives",
+    "text": "Mapping alternatives\nSee: https://future.apply.futureverse.org/#role\n\nlibrary(future.apply)\nplan(multisession) ## Run in parallel on local computer\n\nlibrary(datasets)\nlibrary(stats)\ny &lt;- future_lapply(mtcars, FUN = mean, trim = 0.10)"
+  }
+]
