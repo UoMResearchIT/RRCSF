@@ -39,8 +39,34 @@ challenge_ref <- function(id) {
   n = which(challenge_idx == id)
   paste0("Challenge ", n)
 }
+
+project_repo <- function(relpath = "", branch = "main") {
+  url <- "https://github.com/UoMResearchIT/RRCSF"
+  if (relpath == "" && branch == "main") {
+    return(url)
+  } else {
+    return(paste(url, "tree", branch, relpath, sep="/"))
+  } 
+}
+download.url <- function(relpath, branch = "main") {
+  url <- project_repo(relpath, branch)
+  url <- gsub("/", "%2F", url)
+  url <- gsub(":", "%3A", url)
+  paste0("https://download-directory.github.io/?url=", url)
+}
 ```
 
+## Intro / Setup
+
+These slides are available at: <https://uomresearchit.github.io/RRCSF/>
+
+- You're expected to have `R` installed on your local machine, and an editor
+  you feel comfortable with (doesn't have to be `Rstudio`).
+
+- If not, you can either use [RStudio Cloud](https://rstudio.cloud/), or follow-along from (i)CSF.
+
+- Dowload the materials for challenges [here](`r download.url("challenges")`),
+  or by cloning the course repository: <`r project_repo()`>.
 
 ## Overview
 ::: {.content-visible when-profile="instructor"}
@@ -228,7 +254,7 @@ renv::snapshot()
 ```
 
 #### Copy files to remote.  
-You tipically don't want to include (system-specific) `.Rprofile`, `.Renviron` and the complete `renv` folder. e.g.:
+You typically don't want to include (system-specific) `.Rprofile`, `.Renviron` and the complete `renv` folder. e.g.:
 ```{bash}
 rsync -avz --exclude ".*" --exclude "renv" \
   ./my_project <USER>@csf3.itservices.manchester.ac.uk:~/my_project
@@ -310,12 +336,12 @@ For full list of options:
 -  Project settings: <https://rstudio.github.io/renv/reference/settings.html>
 -  Read about profiles: <https://rstudio.github.io/renv/articles/profiles.html>
 
-## `r challenge('restore')` Copy the code to CSF, and restore your enviroment
+## `r challenge('restore')` Copy the code to CSF, and restore your environment
 
 - Start with your results from `r challenge_ref('02_portable')`
 - Make sure your local `renv.lock` is up to date with `renv::status`
 - Copy your code (excluding the `renv` directory) to `CSF`
-- Start an interactive session wiith `qrsh -l short`
+- Start an interactive session with `qrsh -l short`
 - Load the latest `R` module
 - Install `renv` (running `R` from your home folder)
 - Move to your project folder, and try `renv::restore`
@@ -353,7 +379,7 @@ On CSF you achieve that using: `module load apps/gcc/R/...`
 > NOTE: There's also `littler`. See "Why (or when) is Rscript (or littler) better than R CMD BATCH?" [Stackoverflow](https://stackoverflow.com/questions/21969145/why-or-when-is-rscript-or-littler-better-than-r-cmd-batch)
 
 
-## `r challenge('rcmd')` Submit the script as a job
+## `r challenge('rcmd')` Submit the script as a job {.scrollable}
 
 **On your local machine:**
 
@@ -411,6 +437,11 @@ LAPACK: /opt/apps/apps/gcc/R/4.3.2/lib64/R/lib/libRlapack.so
 
 -  `pnmath` and `romp` are experimental projects to use OpenMP directives in base R functions.  
 _"Similar functionality is expected to become integrated into R ‘eventually’."_ [CRAN/HPC](https://cran.r-project.org/web/views/HighPerformanceComputing.html)
+
+::: {.callout-note}
+## In-package parallelism
+`R` is single-threaded by default, but some packages can use multiple threads or have multi-threaded alternatives. **Read your package documentation**.
+:::
 
 ## Distributed processing
 
@@ -475,14 +506,14 @@ June 26, 2023 in R. <https://www.jottr.org/2023/06/26/dofuture/>
 - Copy the contents of `challenges/05_serial` to a new directory
 - Use `foreach ... %dofuture%` to replace the `for` loop.
 - You might have to install the required `foreach` and `doFuture` packages,
-  e.g. usiing `renv::init`
+  e.g. using `renv::init`
 - Test your script (locally) with `R CMD BATCH loop.R`
 - Test your script on CSF, providing the `-pe smp.pe N` option, e.g.:
 ```{bash}
 qsub -V -b y -l short -pe smp.pe 4 "R CMD BATCH loop.R"
 ```
 
-## Caveats: Non-scalar outputs, random numbers
+## Non-scalar outputs, random numbers {.scrollable}
 
 - Use a custom `.combine` to merge the results evaluated at different cores.
 - **Random numbers require special care** in parallel processing
@@ -493,18 +524,18 @@ qsub -V -b y -l short -pe smp.pe 4 "R CMD BATCH loop.R"
 #| code-line-numbers: "5-8,16-17"
 ```
 
-## Caveats: Progress tracking
+## Progress tracking {.scrollable}
 
 Iterations will usually not be evaluated in order, so progress tracking becomes challenging.
 `%dofuture` offers support for [progressr](https://cran.r-project.org/web/packages/progressr/vignettes/progressr-intro.html)
 
+```{bash, filename=".Renviron"}
+R_PROGRESSR_ENABLE="true"
+```
 ```{r}
 #| file: ../examples/foreach_dataframe.R
 #| filename: foreach_dataframe.R
 #| code-line-numbers: "3,10,14,19,22-23"
-```
-```{r, filename=".Renviron"}
-R_PROGRESSR_ENABLE="true"
 ```
 
 ## Mapping alternatives {.scrollable}
@@ -514,11 +545,30 @@ R_PROGRESSR_ENABLE="true"
 
 See: <https://future.apply.futureverse.org/#role>
 
+Example with `future.apply`:
 ```{r}
 library(future.apply)
-plan(multisession) ## Run in parallel on local computer
+plan(multisession)
 
 library(datasets)
 library(stats)
 y <- future_lapply(mtcars, FUN = mean, trim = 0.10)
 ```
+
+## `r challenge('last')` Self study
+
+- Try to modify the `challenges/06_parallel/loop.R` to use a custom `.combine` function, and to track progress using `progressr`.
+
+- Try to use a mapping function e.g. `future_lapply` to achieve the same result.
+
+- Look at `parallel_tester.R` and `tester.job` in the [examples](`r project_repo('examples')`) folder. They use [`argparser`(https://cran.r-project.org/web/packages/argparser/index.html) to make the script configurable from the command line. Try to run the script with different arguments.
+
+- Modify `tester.job` to submit a [job array](https://ri.itservices.manchester.ac.uk/csf3/batch/job-arrays/) to run the same script with different arguments, in parallel.
+
+## Where to go next
+
+- [High Performance Computing Task View](https://cran.r-project.org/web/views/HighPerformanceComputing.html)
+- [futureverse](https://www.futureverse.org/packages-overview.html)
+- [Bioconductor](https://bioconductor.org/packages/release/bioc/html/BiocParallel.html)
+- [Advanced R - Measuring Performance](https://adv-r.hadley.nz/perf-measure.html)
+- [Advanced R - Improving Performance](https://adv-r.hadley.nz/perf-improve.html)
