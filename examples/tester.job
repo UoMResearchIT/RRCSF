@@ -1,0 +1,12 @@
+#!/bin/bash --login
+#$ -cwd
+#$ -pe smp.pe 4
+
+module load apps/gcc/R/4.3.2
+
+iter=32
+sleep=0.1
+cores=$NSLOTS
+
+log="tester_i${iter}_s${sleep}_c${cores}.Rout"
+Rscript parallel_tester.R --iter $iter --sleep $sleep --cores $cores > $log
