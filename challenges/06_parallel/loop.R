@@ -7,6 +7,8 @@ iter <- 24
 sleep <- 0.1
 cores <- availableCores() # use all available cores
 
+cat(paste("Running", iter, "iterations of", sleep, "seconds on", cores, "cores\n"))
+
 slow_fcn <- function(x) {
   Sys.sleep(sleep)
   x^2

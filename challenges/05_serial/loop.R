@@ -3,6 +3,8 @@
 sleep <- 0.1
 iter <- 24
 
+cat(paste("Running", iter, "iterations of", sleep, "seconds sequentially\n"))
+
 slow_fcn <- function(x) {
   Sys.sleep(sleep)
   x^2
