@@ -1,5 +1,8 @@
 project:
   type: website
   output-dir: docs
+  render:
+    - notes/R_on_CSF.qmd
+    - MPI/RMPI.qmd
 profile:
-  default: instructor
+  default: undefined

@@ -1,11 +1,12 @@
 ---
 title: "Multi-node jobs (Rmpi)"
-author: "Martin Herrerias Azcue"
+author: "Martin Herrerias Azcue (Research IT)"
+date: 2024-04-11
 format: 
   revealjs:
     center: false
     transition: fade
-    theme: [default, custom.scss]
+    theme: [default, ../custom.scss]
     code-line-numbers: false
     execute:
       eval: false
