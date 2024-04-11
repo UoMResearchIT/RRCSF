@@ -403,6 +403,15 @@ Martin Herrerias Azcue (Research IT)
 
   <p class="date">2024-04-11</p>
 </section>
+<section id="intro-setup" class="slide level2">
+<h2>Intro / Setup</h2>
+<p>These slides are available at: <a href="https://uomresearchit.github.io/RRCSF/" class="uri">https://uomresearchit.github.io/RRCSF/</a></p>
+<ul>
+<li><p>You’re expected to have <code>R</code> installed on your local machine, and an editor you feel comfortable with (doesn’t have to be <code>Rstudio</code>).</p></li>
+<li><p>If not, you can either use <a href="https://rstudio.cloud/">RStudio Cloud</a>, or follow-along from (i)CSF.</p></li>
+<li><p>Dowload the materials for challenges <a href="https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2FUoMResearchIT%2FRRCSF%2Ftree%2Fmain%2Fchallenges">here</a>, or by cloning the course repository: <a href="https://github.com/UoMResearchIT/RRCSF" class="uri">https://github.com/UoMResearchIT/RRCSF</a>.</p></li>
+</ul>
+</section>
 <section id="overview" class="slide level2">
 <h2>Overview</h2>
 <p>Make sure your code can run:</p>
@@ -669,7 +678,7 @@ A more robust practice is to do so explicitly (and job-specific):</p>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>renv<span class="sc">::</span><span class="fu">snapshot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <h4 id="copy-files-to-remote.">Copy files to remote.</h4>
-<p>You tipically don’t want to include (system-specific) <code>.Rprofile</code>, <code>.Renviron</code> and the complete <code>renv</code> folder. e.g.:</p>
+<p>You typically don’t want to include (system-specific) <code>.Rprofile</code>, <code>.Renviron</code> and the complete <code>renv</code> folder. e.g.:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rsync</span> <span class="at">-avz</span> <span class="at">--exclude</span> <span class="st">".*"</span> <span class="at">--exclude</span> <span class="st">"renv"</span> <span class="dt">\</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  ./my_project <span class="op">&lt;</span>USER<span class="op">&gt;</span>@csf3.itservices.manchester.ac.uk:~/my_project</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -750,13 +759,13 @@ Imports:
 <li>Read about profiles: <a href="https://rstudio.github.io/renv/articles/profiles.html" class="uri">https://rstudio.github.io/renv/articles/profiles.html</a></li>
 </ul>
 </section>
-<section id="challenge-3.-copy-the-code-to-csf-and-restore-your-enviroment" class="slide level2">
-<h2>🧩 Challenge 3. Copy the code to CSF, and restore your enviroment</h2>
+<section id="challenge-3.-copy-the-code-to-csf-and-restore-your-environment" class="slide level2">
+<h2>🧩 Challenge 3. Copy the code to CSF, and restore your environment</h2>
 <ul>
 <li>Start with your results from Challenge 2</li>
 <li>Make sure your local <code>renv.lock</code> is up to date with <code>renv::status</code></li>
 <li>Copy your code (excluding the <code>renv</code> directory) to <code>CSF</code></li>
-<li>Start an interactive session wiith <code>qrsh -l short</code></li>
+<li>Start an interactive session with <code>qrsh -l short</code></li>
 <li>Load the latest <code>R</code> module</li>
 <li>Install <code>renv</code> (running <code>R</code> from your home folder)</li>
 <li>Move to your project folder, and try <code>renv::restore</code></li>
@@ -786,7 +795,7 @@ On CSF you achieve that using: <code>module load apps/gcc/R/...</code></p>
 <p>NOTE: There’s also <code>littler</code>. See “Why (or when) is Rscript (or littler) better than R CMD BATCH?” <a href="https://stackoverflow.com/questions/21969145/why-or-when-is-rscript-or-littler-better-than-r-cmd-batch">Stackoverflow</a></p>
 </blockquote>
 </section>
-<section id="challenge-4.-submit-the-script-as-a-job" class="slide level2">
+<section id="challenge-4.-submit-the-script-as-a-job" class="slide level2 scrollable">
 <h2>🧩 Challenge 4. Submit the script as a job</h2>
 <p><strong>On your local machine:</strong></p>
 <ul>
@@ -843,6 +852,19 @@ LAPACK: /opt/apps/apps/gcc/R/4.3.2/lib64/R/lib/libRlapack.so</code></pre>
 <li><code>pnmath</code> and <code>romp</code> are experimental projects to use OpenMP directives in base R functions.<br>
 <em>“Similar functionality is expected to become integrated into R ‘eventually’.”</em> <a href="https://cran.r-project.org/web/views/HighPerformanceComputing.html">CRAN/HPC</a></li>
 </ul>
+<div class="callout callout-note callout-titled callout-style-default">
+<div class="callout-body">
+<div class="callout-title">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<p><strong>In-package parallelism</strong></p>
+</div>
+<div class="callout-content">
+<p><code>R</code> is single-threaded by default, but some packages can use multiple threads or have multi-threaded alternatives. <strong>Read your package documentation</strong>.</p>
+</div>
+</div>
+</div>
 </section>
 <section id="distributed-processing" class="slide level2">
 <h2>Distributed processing</h2>
@@ -924,7 +946,7 @@ LAPACK: /opt/apps/apps/gcc/R/4.3.2/lib64/R/lib/libRlapack.so</code></pre>
 <ul>
 <li>Copy the contents of <code>challenges/05_serial</code> to a new directory</li>
 <li>Use <code>foreach ... %dofuture%</code> to replace the <code>for</code> loop.</li>
-<li>You might have to install the required <code>foreach</code> and <code>doFuture</code> packages, e.g.&nbsp;usiing <code>renv::init</code></li>
+<li>You might have to install the required <code>foreach</code> and <code>doFuture</code> packages, e.g.&nbsp;using <code>renv::init</code></li>
 <li>Test your script (locally) with <code>R CMD BATCH loop.R</code></li>
 <li>Test your script on CSF, providing the <code>-pe smp.pe N</code> option, e.g.:</li>
 </ul>
@@ -932,8 +954,8 @@ LAPACK: /opt/apps/apps/gcc/R/4.3.2/lib64/R/lib/libRlapack.so</code></pre>
 <div class="sourceCode cell-code" id="cb31"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="ex">qsub</span> <span class="at">-V</span> <span class="at">-b</span> y <span class="at">-l</span> short <span class="at">-pe</span> smp.pe 4 <span class="st">"R CMD BATCH loop.R"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="caveats-non-scalar-outputs-random-numbers" class="slide level2">
-<h2>Caveats: Non-scalar outputs, random numbers</h2>
+<section id="non-scalar-outputs-random-numbers" class="slide level2 scrollable">
+<h2>Non-scalar outputs, random numbers</h2>
 <ul>
 <li>Use a custom <code>.combine</code> to merge the results evaluated at different cores.</li>
 <li><strong>Random numbers require special care</strong> in parallel processing</li>
@@ -969,59 +991,79 @@ LAPACK: /opt/apps/apps/gcc/R/4.3.2/lib64/R/lib/libRlapack.so</code></pre>
 </div>
 </div>
 </section>
-<section id="caveats-progress-tracking" class="slide level2">
-<h2>Caveats: Progress tracking</h2>
+<section id="progress-tracking" class="slide level2 scrollable">
+<h2>Progress tracking</h2>
 <p>Iterations will usually not be evaluated in order, so progress tracking becomes challenging. <code>%dofuture</code> offers support for <a href="https://cran.r-project.org/web/packages/progressr/vignettes/progressr-intro.html">progressr</a></p>
-<div class="cell" data-file="../examples/foreach_dataframe.R">
-<div class="code-with-filename">
-<div class="code-with-filename-file">
-<pre><strong>foreach_dataframe.R</strong></pre>
-</div>
-<div class="sourceCode cell-code" id="cb33" data-code-line-numbers="3,10,14,19,22-23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a><span class="fu">library</span>(doFuture)</span>
-<span id="cb33-2"><a href="#cb33-2"></a><span class="fu">library</span>(foreach)</span>
-<span id="cb33-3"><a href="#cb33-3"></a><span class="fu">library</span>(progressr)</span>
-<span id="cb33-4"><a href="#cb33-4"></a></span>
-<span id="cb33-5"><a href="#cb33-5"></a>slow_table <span class="ot">&lt;-</span> <span class="cf">function</span>(i, n) {</span>
-<span id="cb33-6"><a href="#cb33-6"></a>  <span class="fu">Sys.sleep</span>(<span class="fl">0.1</span>)</span>
-<span id="cb33-7"><a href="#cb33-7"></a>  <span class="fu">data.frame</span>(<span class="at">itr =</span> i, <span class="at">idx =</span> <span class="dv">1</span><span class="sc">:</span>n, <span class="at">x =</span> <span class="fu">runif</span>(n))</span>
-<span id="cb33-8"><a href="#cb33-8"></a>}</span>
-<span id="cb33-9"><a href="#cb33-9"></a></span>
-<span id="cb33-10"><a href="#cb33-10"></a>parallel_tables <span class="ot">&lt;-</span> <span class="cf">function</span>(iter, n) {</span>
-<span id="cb33-11"><a href="#cb33-11"></a></span>
-<span id="cb33-12"><a href="#cb33-12"></a>  <span class="fu">plan</span>(multisession, <span class="at">workers =</span> <span class="dv">2</span>)</span>
-<span id="cb33-13"><a href="#cb33-13"></a></span>
-<span id="cb33-14"><a href="#cb33-14"></a>  progress <span class="ot">&lt;-</span> <span class="fu">progressor</span>(<span class="at">along =</span> <span class="dv">1</span><span class="sc">:</span>iter)</span>
-<span id="cb33-15"><a href="#cb33-15"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>iter,</span>
-<span id="cb33-16"><a href="#cb33-16"></a>          <span class="at">.combine =</span> rbind,</span>
-<span id="cb33-17"><a href="#cb33-17"></a>          <span class="at">.options.future =</span> <span class="fu">list</span>(<span class="at">seed =</span> <span class="cn">TRUE</span>)) <span class="sc">%dofuture%</span> {</span>
-<span id="cb33-18"><a href="#cb33-18"></a></span>
-<span id="cb33-19"><a href="#cb33-19"></a>    <span class="fu">progress</span>(<span class="fu">sprintf</span>(<span class="st">"i=%g"</span>, i))</span>
-<span id="cb33-20"><a href="#cb33-20"></a>    <span class="fu">slow_table</span>(i, n)</span>
-<span id="cb33-21"><a href="#cb33-21"></a>  }</span>
-<span id="cb33-22"><a href="#cb33-22"></a>}</span>
-<span id="cb33-23"><a href="#cb33-23"></a>df <span class="ot">&lt;-</span> <span class="fu">parallel_tables</span>(<span class="dv">100</span>, <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</div>
 <div class="cell">
 <div class="code-with-filename">
 <div class="code-with-filename-file">
 <pre><strong>.Renviron</strong></pre>
 </div>
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>R_PROGRESSR_ENABLE<span class="ot">=</span><span class="st">"true"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="va">R_PROGRESSR_ENABLE</span><span class="op">=</span><span class="st">"true"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div class="cell" data-file="../examples/foreach_dataframe.R">
+<div class="code-with-filename">
+<div class="code-with-filename-file">
+<pre><strong>foreach_dataframe.R</strong></pre>
+</div>
+<div class="sourceCode cell-code" id="cb34" data-code-line-numbers="3,10,14,19,22-23"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1"></a><span class="fu">library</span>(doFuture)</span>
+<span id="cb34-2"><a href="#cb34-2"></a><span class="fu">library</span>(foreach)</span>
+<span id="cb34-3"><a href="#cb34-3"></a><span class="fu">library</span>(progressr)</span>
+<span id="cb34-4"><a href="#cb34-4"></a></span>
+<span id="cb34-5"><a href="#cb34-5"></a>slow_table <span class="ot">&lt;-</span> <span class="cf">function</span>(i, n) {</span>
+<span id="cb34-6"><a href="#cb34-6"></a>  <span class="fu">Sys.sleep</span>(<span class="fl">0.1</span>)</span>
+<span id="cb34-7"><a href="#cb34-7"></a>  <span class="fu">data.frame</span>(<span class="at">itr =</span> i, <span class="at">idx =</span> <span class="dv">1</span><span class="sc">:</span>n, <span class="at">x =</span> <span class="fu">runif</span>(n))</span>
+<span id="cb34-8"><a href="#cb34-8"></a>}</span>
+<span id="cb34-9"><a href="#cb34-9"></a></span>
+<span id="cb34-10"><a href="#cb34-10"></a>parallel_tables <span class="ot">&lt;-</span> <span class="cf">function</span>(iter, n) {</span>
+<span id="cb34-11"><a href="#cb34-11"></a></span>
+<span id="cb34-12"><a href="#cb34-12"></a>  <span class="fu">plan</span>(multisession, <span class="at">workers =</span> <span class="dv">2</span>)</span>
+<span id="cb34-13"><a href="#cb34-13"></a></span>
+<span id="cb34-14"><a href="#cb34-14"></a>  progress <span class="ot">&lt;-</span> <span class="fu">progressor</span>(<span class="at">along =</span> <span class="dv">1</span><span class="sc">:</span>iter)</span>
+<span id="cb34-15"><a href="#cb34-15"></a>  <span class="fu">foreach</span>(<span class="at">i =</span> <span class="dv">1</span><span class="sc">:</span>iter,</span>
+<span id="cb34-16"><a href="#cb34-16"></a>          <span class="at">.combine =</span> rbind,</span>
+<span id="cb34-17"><a href="#cb34-17"></a>          <span class="at">.options.future =</span> <span class="fu">list</span>(<span class="at">seed =</span> <span class="cn">TRUE</span>)) <span class="sc">%dofuture%</span> {</span>
+<span id="cb34-18"><a href="#cb34-18"></a></span>
+<span id="cb34-19"><a href="#cb34-19"></a>    <span class="fu">progress</span>(<span class="fu">sprintf</span>(<span class="st">"i=%g"</span>, i))</span>
+<span id="cb34-20"><a href="#cb34-20"></a>    <span class="fu">slow_table</span>(i, n)</span>
+<span id="cb34-21"><a href="#cb34-21"></a>  }</span>
+<span id="cb34-22"><a href="#cb34-22"></a>}</span>
+<span id="cb34-23"><a href="#cb34-23"></a>df <span class="ot">&lt;-</span> <span class="fu">parallel_tables</span>(<span class="dv">100</span>, <span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 </section>
 <section id="mapping-alternatives" class="slide level2 scrollable">
 <h2>Mapping alternatives</h2>
 <p>See: <a href="https://future.apply.futureverse.org/#role" class="uri">https://future.apply.futureverse.org/#role</a></p>
+<p>Example with <code>future.apply</code>:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(future.apply)</span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plan</span>(multisession) <span class="do">## Run in parallel on local computer</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plan</span>(multisession)</span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(datasets)</span>
 <span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stats)</span>
 <span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">future_lapply</span>(mtcars, <span class="at">FUN =</span> mean, <span class="at">trim =</span> <span class="fl">0.10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+<section id="challenge-6.-self-study" class="slide level2">
+<h2>🧩 Challenge 6. Self study</h2>
+<ul>
+<li><p>Try to modify the <code>challenges/06_parallel/loop.R</code> to use a custom <code>.combine</code> function, and to track progress using <code>progressr</code>.</p></li>
+<li><p>Try to use a mapping function e.g.&nbsp;<code>future_lapply</code> to achieve the same result.</p></li>
+<li><p>Look at <code>parallel_tester.R</code> and <code>tester.job</code> in the <a href="https://github.com/UoMResearchIT/RRCSF/tree/main/examples">examples</a> folder. They use [<code>argparser</code>(https://cran.r-project.org/web/packages/argparser/index.html) to make the script configurable from the command line. Try to run the script with different arguments.</p></li>
+<li><p>Modify <code>tester.job</code> to submit a <a href="https://ri.itservices.manchester.ac.uk/csf3/batch/job-arrays/">job array</a> to run the same script with different arguments, in parallel.</p></li>
+</ul>
+</section>
+<section id="where-to-go-next" class="slide level2">
+<h2>Where to go next</h2>
+<ul>
+<li><a href="https://cran.r-project.org/web/views/HighPerformanceComputing.html">High Performance Computing Task View</a></li>
+<li><a href="https://www.futureverse.org/packages-overview.html">futureverse</a></li>
+<li><a href="https://bioconductor.org/packages/release/bioc/html/BiocParallel.html">Bioconductor</a></li>
+<li><a href="https://adv-r.hadley.nz/perf-measure.html">Advanced R - Measuring Performance</a></li>
+<li><a href="https://adv-r.hadley.nz/perf-improve.html">Advanced R - Improving Performance</a></li>
+</ul>
 
 <div class="footer footer-default">
 
