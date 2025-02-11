@@ -561,7 +561,7 @@ y <- future_lapply(mtcars, FUN = mean, trim = 0.10)
 
 - Try to use a mapping function e.g. `future_lapply` to achieve the same result.
 
-- Look at `parallel_tester.R` and `tester.job` in the [examples](`r project_repo('examples')`) folder. They use [`argparser`(https://cran.r-project.org/web/packages/argparser/index.html) to make the script configurable from the command line. Try to run the script with different arguments.
+- Look at `parallel_tester.R` and `tester.job` in the [examples](`r project_repo('examples')`) folder. They use [`argparser`](https://cran.r-project.org/web/packages/argparser/index.html) to make the script configurable from the command line. Try to run the script with different arguments.
 
 - Modify `tester.job` to submit a [job array](https://ri.itservices.manchester.ac.uk/csf3/batch/job-arrays/) to run the same script with different arguments, in parallel.
 
